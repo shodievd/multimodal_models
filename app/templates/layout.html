@@ -25,6 +25,7 @@
                         class="{{ 'active' if request.endpoint == 'generate_page' else '' }}"><i
                             class="fa-solid fa-wand-magic-sparkles"></i> Generate Image</a></li>
                 <li><a href="#" onclick="openSettings()"><i class="fa-solid fa-cog"></i> Settings</a></li>
+                <li><a href="#" onclick="openLogs()"><i class="fa-solid fa-terminal"></i> Logs</a></li>
             </ul>
         </nav>
         <main class="content">
@@ -44,6 +45,18 @@
                     </select>
                 </div>
                 <p id="settings-status"></p>
+            </div>
+        </div>
+
+        <!-- Logs Modal -->
+        <div id="logs-modal" class="modal" style="display: none;">
+            <div class="modal-content" style="width: 80%; max-width: 800px; height: 80vh; display: flex; flex-direction: column;">
+                <span class="close" onclick="closeLogs()">&times;</span>
+                <h2>Application Logs</h2>
+                <div id="logs-container" style="flex: 1; background: #1e1e1e; color: #d4d4d4; padding: 1rem; overflow-y: auto; font-family: monospace; white-space: pre-wrap; border-radius: 4px;">Loading logs...</div>
+                <div style="margin-top: 1rem; text-align: right;">
+                    <button onclick="fetchLogs()" class="btn primary">Refresh</button>
+                </div>
             </div>
         </div>
     </div>

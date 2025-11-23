@@ -84,6 +84,11 @@ def config():
             
     return jsonify(model_manager.get_config())
 
+@app.route('/api/logs', methods=['GET'])
+def get_logs():
+    return jsonify({'logs': model_manager.get_logs()})
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+    debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(host='0.0.0.0', port=port, debug=debug_mode)

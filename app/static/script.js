@@ -241,9 +241,53 @@ async function updateDeviceInternal(device) {
 
 // Close modal when clicking outside
 window.onclick = function (event) {
-    const modal = document.getElementById('settings-modal');
-    if (event.target == modal) {
-        modal.style.display = "none";
+    const settingsModal = document.getElementById('settings-modal');
+    const logsModal = document.getElementById('logs-modal');
+    if (event.target == settingsModal) {
+        settingsModal.style.display = "none";
+    }
+    if (event.target == logsModal) {
+        logsModal.style.display = "none";
+    }
+}
+
+// Logs Logic
+let logsInterval = null;
+
+function openLogs() {
+    document.getElementById('logs-modal').style.display = 'block';
+    fetchLogs();
+    // Auto-refresh every 2 seconds while open
+    if (logsInterval) clearInterval(logsInterval);
+    logsInterval = setInterval(fetchLogs, 2000);
+}
+
+function closeLogs() {
+    document.getElementById('logs-modal').style.display = 'none';
+    if (logsInterval) clearInterval(logsInterval);
+    logsInterval = null;
+}
+
+async function fetchLogs() {
+    const container = document.getElementById('logs-container');
+    try {
+        const response = await fetch('/api/logs');
+        const data = await response.json();
+
+        if (response.ok) {
+            // Only scroll to bottom if we were already at the bottom or it's the first load
+            const isAtBottom = container.scrollHeight - container.scrollTop === container.clientHeight;
+
+            container.textContent = data.logs || "No logs available.";
+
+            if (isAtBottom || container.textContent.length < 1000) { // Simple heuristic
+                container.scrollTop = container.scrollHeight;
+            }
+        } else {
+            container.textContent = "Error fetching logs: " + data.error;
+        }
+    } catch (error) {
+        container.textContent = "Error fetching logs: " + error.message;
     }
 }
 

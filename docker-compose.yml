@@ -11,10 +11,12 @@ services:
       - ./hf_cache:/root/.cache/huggingface
       - ./app/static/uploads:/app/static/uploads
       - ./app/static/generated:/app/static/generated
+      - ./app:/app
     environment:
       - DEVICE=${DEVICE:-cpu}
       - MODEL_SIZE=${MODEL_SIZE:-small}
       - PORT=${PORT:-5000}
+      - FLASK_DEBUG=1
     deploy:
       resources:
         reservations:

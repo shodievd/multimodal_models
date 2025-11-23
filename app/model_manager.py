@@ -1,11 +1,20 @@
 import os
 import torch
-from transformers import AutoProcessor, AutoModelForVision2Seq
+from transformers import AutoProcessor, AutoModelForVision2Seq, AutoModelForImageTextToText
 from diffusers import AutoPipelineForText2Image
 from PIL import Image
 import logging
+import io
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging to capture to string
+log_capture_string = io.StringIO()
+ch = logging.StreamHandler(log_capture_string)
+ch.setLevel(logging.INFO)
+
+logging.basicConfig(level=logging.INFO, handlers=[
+    logging.StreamHandler(), # Output to console
+    ch # Output to string buffer
+])
 logger = logging.getLogger(__name__)
 
 class ModelManager:
@@ -15,8 +24,12 @@ class ModelManager:
         self.vqa_model = None
         self.vqa_processor = None
         self.t2i_pipeline = None
+        self.model_map = {
+           "large": "HuggingFaceTB/SmolVLM2-2.2B-Instruct",
+           "small": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"
+        }
         
-        logger.info(f"Model Manager initialized. Device: {self.device}, Model Size: {self.model_size}")
+        logger.info(f"Model Manager initialized. Device: {self.device}, Model Version: {self.model_size}")
 
     def load_vqa_model(self, model_size=None):
         if model_size and model_size != self.model_size:
@@ -27,31 +40,28 @@ class ModelManager:
 
         if self.vqa_model is not None:
             return
-
-        # Map model_size to actual model ID
-        # For this demo, we can simulate different models or use actual variants if available.
-        # SmolVLM-Instruct is the main one. Let's assume "SmolVLM-256M" maps to a smaller one or same for demo.
-        # Actually, let's just use the same model but log the "size" change to demonstrate the logic,
-        # or if there is a real smaller variant, use it.
-        # HuggingFaceTB/SmolVLM-Instruct is 2.2B params.
-        # Let's assume the user might want to switch to a different one.
         
-        model_id = "HuggingFaceTB/SmolVLM-Instruct"
-        if self.model_size == "SmolVLM-256M":
-             # Placeholder for a smaller model if it existed, or just re-use for demo purposes
-             # to avoid downloading another huge model.
-             # But to be "real", let's say we use the same one but maybe with different quantization if we could?
-             # For now, let's just stick to the main one but acknowledge the config.
-             pass
+
+        model_id = self.model_map[self.model_size]
         
         logger.info(f"Loading VQA model: {model_id} (Size: {self.model_size})...")
         try:
             self.vqa_processor = AutoProcessor.from_pretrained(model_id)
-            self.vqa_model = AutoModelForVision2Seq.from_pretrained(
+            # Check if flash_attn is available
+            attn_implementation = "eager"
+            if self.device == "cuda":
+                try:
+                    import flash_attn
+                    attn_implementation = "flash_attention_2"
+                except ImportError:
+                    logger.warning("FlashAttention2 not installed. Falling back to default attention.")
+                    attn_implementation = "sdpa" # Scaled Dot Product Attention (PyTorch 2.0+)
+
+            self.vqa_model = AutoModelForImageTextToText.from_pretrained(
                 model_id,
                 torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
-                _attn_implementation="flash_attention_2" if self.device == "cuda" else "eager",
-            ).to(self.device)
+                _attn_implementation=attn_implementation,
+            )
             logger.info("VQA model loaded successfully.")
         except Exception as e:
             logger.error(f"Error loading VQA model: {e}")
@@ -60,7 +70,7 @@ class ModelManager:
     def load_t2i_model(self):
         if self.t2i_pipeline is not None:
             return
-
+    
         model_id = "stabilityai/sdxl-turbo"
         
         logger.info(f"Loading Text-to-Image model: {model_id}...")
@@ -70,7 +80,7 @@ class ModelManager:
                 torch_dtype=torch.float16 if self.device == "cuda" else torch.float32, 
                 variant="fp16" if self.device == "cuda" else None
             )
-            self.t2i_pipeline.to(self.device)
+
             logger.info("Text-to-Image model loaded successfully.")
         except Exception as e:
             logger.error(f"Error loading T2I model: {e}")
@@ -78,6 +88,7 @@ class ModelManager:
 
     def process_vqa(self, image_path, prompt, model_size=None):
         self.load_vqa_model(model_size)
+        self.vqa_model.to(self.device)
         
         image = Image.open(image_path).convert("RGB")
         
@@ -101,29 +112,27 @@ class ModelManager:
             generated_ids,
             skip_special_tokens=True,
         )
-        
-        # Extract the assistant's response
-        # The prompt is included in the output, so we might need to strip it or just return the last part
-        # SmolVLM usually returns the full conversation.
-        # Let's try to parse it or just return the raw text for now, but usually we want just the answer.
-        # For simplicity in this demo, we'll return the whole text and let the frontend or user see it, 
-        # or we can try to split by "Assistant:".
-        
-        response = generated_texts[0]
-        # Basic cleanup if needed, but apply_chat_template usually handles structure well.
-        # If the model repeats the prompt, we might want to cut it.
-        # For SmolVLM, it typically appends the answer.
-        
-        # A simple heuristic to remove the prompt if it's repeated:
+                
+        response = generated_texts[0].split("\nAssistant:")[1]
+        # logger.info(f"Generated response: {generated_texts}")
+        # logger.info(f"VQA response: {response}, response_type {type(response)}")
         if prompt_text in response:
              response = response.replace(prompt_text, "").strip()
+
+        self.vqa_model.to("cpu")
+        torch.cuda.empty_cache()
              
         return response
 
     def generate_image(self, prompt):
         self.load_t2i_model()
+        self.t2i_pipeline.to(self.device)
         
         image = self.t2i_pipeline(prompt=prompt, num_inference_steps=1, guidance_scale=0.0).images[0]
+        
+        self.t2i_pipeline.to("cpu")
+        torch.cuda.empty_cache()
+        
         return image
 
     def set_device(self, device):
@@ -139,19 +148,10 @@ class ModelManager:
         logger.info(f"Switching device from {self.device} to {device}...")
         self.device = device
         
-        # Move existing models
-        if self.vqa_model:
-            self.vqa_model.to(self.device)
-            # Update dtype if needed, but usually fp16 on cpu is slow/not supported for some ops, 
-            # so we might need to reload or cast. 
-            # For simplicity, we just move. Ideally we should reload with correct precision.
-            if self.device == "cpu":
-                self.vqa_model = self.vqa_model.float()
-            else:
-                self.vqa_model = self.vqa_model.half()
-
-        if self.t2i_pipeline:
-            self.t2i_pipeline.to(self.device)
+        if self.device == "cpu":
+            self.vqa_model = self.vqa_model.float()
+        else:
+            self.vqa_model = self.vqa_model.half()
 
         logger.info(f"Switched to {self.device}.")
 
@@ -160,3 +160,6 @@ class ModelManager:
             "device": self.device,
             "model_size": self.model_size
         }
+
+    def get_logs(self):
+        return log_capture_string.getvalue()

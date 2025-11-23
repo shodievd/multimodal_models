@@ -1,8 +1,11 @@
 flask==3.0.0
 torch
-transformers
+git+https://github.com/huggingface/transformers.git
 diffusers
 accelerate
 pillow
 sentencepiece
 protobuf
+decord
+torchvision
+num2words
