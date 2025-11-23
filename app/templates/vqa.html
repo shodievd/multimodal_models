@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="chat-container">
+    <div class="chat-header">
+        <h1>Visual Question Answering</h1>
+        <div class="chat-controls">
+            <select id="model-select" class="control-select">
+                <option value="SmolVLM-Instruct">SmolVLM-Instruct (Default)</option>
+                <option value="SmolVLM-256M">SmolVLM-256M (Faster)</option>
+            </select>
+            <select id="device-select-chat" class="control-select" onchange="updateDeviceFromChat()">
+                <option value="cpu">CPU</option>
+                <option value="cuda">GPU (CUDA)</option>
+            </select>
+        </div>
+        <p>Upload an image and ask questions about it.</p>
+    </div>
+
+    <div class="chat-messages" id="chat-messages">
+        <!-- Messages will appear here -->
+        <div class="message system">
+            <div class="message-content">
+                Hello! Upload an image to start chatting.
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-input-area">
+        <div class="image-preview" id="image-preview-container" style="display: none;">
+            <img id="image-preview" src="" alt="Preview">
+            <button class="remove-image" onclick="clearImage()"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <form id="chat-form" onsubmit="handleChatSubmit(event)">
+            <label for="image-upload" class="upload-btn">
+                <i class="fa-solid fa-image"></i>
+            </label>
+            <input type="file" id="image-upload" accept="image/*" onchange="handleImageSelect(event)" hidden>
+            <input type="text" id="chat-input" placeholder="Ask a question about the image..." autocomplete="off">
+            <button type="submit" id="send-btn" disabled><i class="fa-solid fa-paper-plane"></i></button>
+        </form>
+    </div>
+</div>
+{% endblock %}

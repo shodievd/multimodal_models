@@ -1,0 +1,8 @@
+flask==3.0.0
+torch
+transformers
+diffusers
+accelerate
+pillow
+sentencepiece
+protobuf

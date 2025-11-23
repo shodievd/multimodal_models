@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multimodal AI Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="logo">
+                <i class="fa-solid fa-brain"></i>
+                <span>AI Vision</span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="{{ url_for('vqa_page') }}"
+                        class="{{ 'active' if request.endpoint == 'vqa_page' else '' }}"><i
+                            class="fa-solid fa-comments"></i> VQA & Chat</a></li>
+                <li><a href="{{ url_for('generate_page') }}"
+                        class="{{ 'active' if request.endpoint == 'generate_page' else '' }}"><i
+                            class="fa-solid fa-wand-magic-sparkles"></i> Generate Image</a></li>
+                <li><a href="#" onclick="openSettings()"><i class="fa-solid fa-cog"></i> Settings</a></li>
+            </ul>
+        </nav>
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close" onclick="closeSettings()">&times;</span>
+                <h2>Settings</h2>
+                <div class="form-group">
+                    <label for="device-select">Compute Device</label>
+                    <select id="device-select" onchange="updateDevice()">
+                        <option value="cpu">CPU</option>
+                        <option value="cuda">GPU (CUDA)</option>
+                    </select>
+                </div>
+                <p id="settings-status"></p>
+            </div>
+        </div>
+    </div>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>

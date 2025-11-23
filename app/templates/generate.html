@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="generate-container">
+    <div class="generate-header">
+        <h1>Text to Image</h1>
+        <p>Describe your imagination and let AI create it.</p>
+    </div>
+
+    <div class="generate-content">
+        <div class="input-section">
+            <form id="generate-form" onsubmit="handleGenerateSubmit(event)">
+                <div class="form-group">
+                    <label for="prompt">Prompt</label>
+                    <textarea id="prompt" rows="4" placeholder="A cyberpunk city with neon lights..."
+                        required></textarea>
+                </div>
+                <button type="submit" id="generate-btn" class="primary-btn">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Generate
+                </button>
+            </form>
+        </div>
+
+        <div class="result-section">
+            <div class="placeholder" id="result-placeholder">
+                <i class="fa-regular fa-image"></i>
+                <p>Generated image will appear here</p>
+            </div>
+            <div class="loading-spinner" id="loading-spinner" style="display: none;">
+                <div class="spinner"></div>
+                <p>Dreaming...</p>
+            </div>
+            <div class="generated-image-container" id="generated-image-container" style="display: none;">
+                <img id="generated-image" src="" alt="Generated Image">
+                <a id="download-btn" href="#" download="generated.png" class="download-btn">
+                    <i class="fa-solid fa-download"></i> Download
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
