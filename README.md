@@ -2,14 +2,6 @@
 
 This project implements a web interface for a multimodal AI system, featuring Visual Question Answering (VQA) using SmolVLM2 and Text-to-Image generation using Stable Diffusion.
 
-## Features
-
-- **Visual Question Answering (VQA)**: Upload images and ask questions about them in a chat-like interface.
-- **Text-to-Image Generation**: Generate images from text prompts.
-- **Offline Capability**: Models are cached locally; the app works offline once models are downloaded.
-- **Dockerized**: Easy deployment using Docker and Docker Compose.
-- **Configurable**: Support for GPU/CPU and model customization.
-
 ## Prerequisites
 
 - Docker
@@ -90,7 +82,7 @@ ports:
 ## Technical Details
 
 - **Backend**: Flask (Python)
-- **Frontend**: HTML, CSS (Glassmorphism), JavaScript
+- **Frontend**: HTML, CSS, JavaScript
 - **Models**:
     - VQA: `HuggingFaceTB/SmolVLM-Instruct`
     - Text-to-Image: `stabilityai/sdxl-turbo`
