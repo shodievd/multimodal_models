@@ -37,6 +37,7 @@ You can configure the application using environment variables in `docker-compose
 | `PORT` | Port to expose on host | `5000` | Any valid port |
 | `DEVICE` | Initial compute device | `cpu` | `cuda`, `cpu` |
 | `MODEL_SIZE` | Model variant (if applicable) | `small` | `small`, `large` |
+| `HF_TOKEN` | Your HF token | `N/A` | `<hf_token>` |
 
 **Example: Running on GPU**
 
