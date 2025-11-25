@@ -17,6 +17,7 @@ services:
       - MODEL_SIZE=${MODEL_SIZE:-small}
       - PORT=${PORT:-5000}
       - FLASK_DEBUG=1
+      - HF_TOKEN=${HF_TOKEN}
     deploy:
       resources:
         reservations:

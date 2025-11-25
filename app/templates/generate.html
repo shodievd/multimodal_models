@@ -7,6 +7,11 @@
         <p>Describe your imagination and let AI create it.</p>
     </div>
 
+    <select id="model-select" class="control-select">
+        <option value="small" selected>sdxl-turbo</option>
+        <option value="large">stable-diffusion-xl-base-1.0</option>
+    </select>
+
     <div class="generate-content">
         <div class="input-section">
             <form id="generate-form" onsubmit="handleGenerateSubmit(event)">

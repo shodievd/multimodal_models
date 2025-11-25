@@ -1,10 +1,11 @@
 import os
 import torch
 from transformers import AutoProcessor, AutoModelForVision2Seq, AutoModelForImageTextToText
-from diffusers import AutoPipelineForText2Image
+from diffusers import AutoPipelineForText2Image, DiffusionPipeline
 from PIL import Image
 import logging
 import io
+from huggingface_hub import login
 
 # Configure logging to capture to string
 log_capture_string = io.StringIO()
@@ -24,10 +25,20 @@ class ModelManager:
         self.vqa_model = None
         self.vqa_processor = None
         self.t2i_pipeline = None
+        self.t2i_model_size = os.environ.get("T2I_MODEL_SIZE", "small") # small, large
         self.model_map = {
            "large": "HuggingFaceTB/SmolVLM2-2.2B-Instruct",
            "small": "HuggingFaceTB/SmolVLM2-500M-Video-Instruct"
         }
+
+        self.t2i_model_map = {
+           "large": "stabilityai/stable-diffusion-xl-base-1.0",
+           "small": "stabilityai/sdxl-turbo"
+        }
+        
+        if "HF_TOKEN" in os.environ:
+            logger.info("Authenticating with Hugging Face...")
+            login(token=os.environ["HF_TOKEN"])
         
         logger.info(f"Model Manager initialized. Device: {self.device}, Model Version: {self.model_size}")
 
@@ -67,24 +78,41 @@ class ModelManager:
             logger.error(f"Error loading VQA model: {e}")
             raise e
 
-    def load_t2i_model(self):
-        if self.t2i_pipeline is not None:
+    def load_t2i_model(self, model_size=None):
+        if self.t2i_pipeline is not None and self.t2i_model_size == model_size:
             return
-    
-        model_id = "stabilityai/sdxl-turbo"
+
+        if model_size and model_size != self.t2i_model_size:
+            logger.info(f"Switching model size from {self.t2i_model_size} to {model_size}...")
+            self.t2i_model_size = model_size
+            self.t2i_pipeline = None # Force reload
+
+        model_id = self.t2i_model_map[self.t2i_model_size]
         
         logger.info(f"Loading Text-to-Image model: {model_id}...")
-        try:
-            self.t2i_pipeline = AutoPipelineForText2Image.from_pretrained(
-                model_id, 
-                torch_dtype=torch.float16 if self.device == "cuda" else torch.float32, 
-                variant="fp16" if self.device == "cuda" else None
-            )
+        if model_size == "large":
+            try:
+                self.t2i_pipeline = DiffusionPipeline.from_pretrained(
+                    model_id,
+                    torch_dtype=torch.float16 if self.device == "cuda" else torch.float32,
+                    variant="fp16" if self.device == "cuda" else None
+                )
+                logger.info("Text-to-Image model loaded successfully.")
+            except Exception as e:
+                logger.error(f"Error loading T2I model: {e}")
+                raise e
+        else:
+            try:
+                self.t2i_pipeline = AutoPipelineForText2Image.from_pretrained(
+                    model_id, 
+                    torch_dtype=torch.float16 if self.device == "cuda" else torch.float32, 
+                    variant="fp16" if self.device == "cuda" else None
+                )
 
-            logger.info("Text-to-Image model loaded successfully.")
-        except Exception as e:
-            logger.error(f"Error loading T2I model: {e}")
-            raise e
+                logger.info("Text-to-Image model loaded successfully.")
+            except Exception as e:
+                logger.error(f"Error loading T2I model: {e}")
+                raise e
 
     def process_vqa(self, image_path, prompt, model_size=None):
         self.load_vqa_model(model_size)
@@ -124,12 +152,14 @@ class ModelManager:
              
         return response
 
-    def generate_image(self, prompt):
-        self.load_t2i_model()
+    def generate_image(self, prompt, model_size=None):
+        self.load_t2i_model(model_size)
         self.t2i_pipeline.to(self.device)
         
-        image = self.t2i_pipeline(prompt=prompt, num_inference_steps=1, guidance_scale=0.0).images[0]
-        
+        if model_size == 'small':
+            image = self.t2i_pipeline(prompt=prompt, num_inference_steps=1, guidance_scale=0.0).images[0]
+        elif model_size == 'large':
+            image = self.t2i_pipeline(prompt=prompt).images[0]
         self.t2i_pipeline.to("cpu")
         torch.cuda.empty_cache()
         

@@ -63,7 +63,7 @@ async function handleChatSubmit(event) {
     // Clear input but keep image for follow-up
     input.value = '';
     document.getElementById('send-btn').disabled = true;
-
+    console.log(formData);
     try {
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -132,6 +132,13 @@ async function handleGenerateSubmit(event) {
     try {
         const formData = new FormData();
         formData.append('prompt', prompt);
+
+        const modelSelect = document.getElementById('model-select');
+        if (modelSelect) {
+            formData.append('model_size', modelSelect.value);
+        }
+
+        console.log(`Generating image with prompt: "${prompt}" and model: ${modelSelect ? modelSelect.value : 'default'}`);
 
         const response = await fetch('/api/generate', {
             method: 'POST',

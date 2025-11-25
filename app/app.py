@@ -58,11 +58,12 @@ def chat():
 @app.route('/api/generate', methods=['POST'])
 def generate():
     prompt = request.form.get('prompt')
+    model_size = request.form.get('model_size')
     if not prompt:
         return jsonify({'error': 'No prompt provided'}), 400
     
     try:
-        image = model_manager.generate_image(prompt)
+        image = model_manager.generate_image(prompt, model_size)
         filename = str(uuid.uuid4()) + ".png"
         filepath = os.path.join(app.config['GENERATED_FOLDER'], filename)
         image.save(filepath)
@@ -90,5 +91,5 @@ def get_logs():
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
-    app.run(host='0.0.0.0', port=port, debug=debug_mode)
+    # debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
+    app.run(host='0.0.0.0', port=port, debug=True)
