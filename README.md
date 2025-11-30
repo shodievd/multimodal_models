@@ -66,21 +66,6 @@ volumes:
   - /path/to/your/cache:/root/.cache/huggingface
 ```
 
-### 5. Changing the Port
-
-To run on a different port (e.g., 8080), run:
-
-```bash
-PORT=8080 docker-compose up
-```
-
-Or modify the `ports` section in `docker-compose.yml`:
-
-```yaml
-ports:
-  - "8080:5000"
-```
-
 ## Technical Details
 
 - **Backend**: Flask (Python)
