@@ -30,7 +30,8 @@ The application will be available at `http://localhost:5000`.
 
 ### 3. Configuration
 
-You can configure the application using environment variables in `docker-compose.yml` or by creating a `.env` file.
+You can configure the application using environment variables in `.env` file or by modifying `docker-compose.yml` (not recommended).
+Note: you might be asked to log-in to HF. If so, add `HF_TOKEN` to `.env` file.
 
 | Variable | Description | Default | Options |
 |----------|-------------|---------|---------|
